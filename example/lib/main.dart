@@ -84,7 +84,16 @@ class _MyAppState extends State<MyApp> {
     return RaisedButton(
       child: Text('getDeviceList'),
       onPressed: () async {
-        _deviceList = await QuickUsb.getDeviceList();
+        _deviceList = List<UsbDevice>.empty(growable: true);
+        List<UsbDevice> _deviceListTmp;
+        UsbDevice nanoS;
+        _deviceListTmp = await QuickUsb.getDeviceList();
+        for (int i = 0; i < _deviceListTmp.length; i++) {
+          if (_deviceListTmp[i].vendorId == 0x2c97) {
+            nanoS = _deviceListTmp[i];
+          }
+        }
+        _deviceList.add(nanoS);
         log('deviceList $_deviceList');
       },
     );
@@ -167,7 +176,7 @@ class _MyAppState extends State<MyApp> {
           child: Text('claimInterface'),
           onPressed: () async {
             var claimInterface =
-                await QuickUsb.claimInterface(_configuration.interfaces[0]);
+                await QuickUsb.claimInterface(_configuration.interfaces[1]);
             log('claimInterface $claimInterface');
           },
         ),
@@ -190,17 +199,18 @@ class _MyAppState extends State<MyApp> {
         RaisedButton(
           child: Text('bulkTransferIn'),
           onPressed: () async {
-            var endpoint = _configuration.interfaces[0].endpoints
+            var endpoint = _configuration.interfaces[1].endpoints
                 .firstWhere((e) => e.direction == UsbEndpoint.DIRECTION_IN);
-            var bulkTransferIn = await QuickUsb.bulkTransferIn(endpoint, 1024);
+            var bulkTransferIn =
+                await QuickUsb.bulkTransferIn(endpoint, 1024, timeout: 5000);
             log('bulkTransferIn ${hex.encode(bulkTransferIn)}');
           },
         ),
         RaisedButton(
           child: Text('bulkTransferOut'),
           onPressed: () async {
-            var data = Uint8List.fromList(utf8.encode(''));
-            var endpoint = _configuration.interfaces[0].endpoints
+            var data = Uint8List.fromList(utf8.encode('e0c4000000'));
+            var endpoint = _configuration.interfaces[1].endpoints
                 .firstWhere((e) => e.direction == UsbEndpoint.DIRECTION_OUT);
             var bulkTransferOut =
                 await QuickUsb.bulkTransferOut(endpoint, data);
